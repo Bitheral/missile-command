@@ -19,6 +19,26 @@ maxRadius = 60
 allExplosions = []
 delay = 100  # number of milliseconds delay before generating a USEREVENT
 
+ground_height = height - 32
+
+
+class Silo:
+    def __init__(self, pos, w):
+        self.pos = pos
+        self.missiles = 6
+        self.width = w
+        self.height = w / 4
+        self.x = pos[0]
+        self.y = pos[1]
+        self.mound_vertices = [(self.x, self.y), (self.x + self.width, self.y),
+                               (self.x + self.width - (self.width / 4), self.y - self.height),
+                               (self.x + (self.width / 4), self.y - self.height)]
+
+    def draw(self):
+        # pygame.draw.rect(screen, (255, 255, 255), self.rect)
+        pygame.draw.polygon(screen, (0, 255, 0), self.mound_vertices)
+
+
 class City:
     def __init__(self, pos, city_width):
         self.pos = pos
@@ -35,33 +55,50 @@ class City:
 
         for building in range(building_count):
             building_width = (self.width / building_count)
-            building_height = random.random() * (self.width / 3)
-            building_pos = [self.pos[0] + (building_buffer * building) + (building_width * building), self.pos[1] - building_height]
+            building_height = random.randrange(int(self.width / 6), int(self.width / 2))  # * (self.width / 3)
+            building_pos = [self.pos[0] + (building_buffer * building) + (building_width * building),
+                            self.pos[1] - building_height]
 
             rect = pygame.Rect(building_pos, (building_width, building_height))
             colour = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
 
-            #                      Rect, Colour, Destroyed
-            self.buildings.append((rect, colour, False))
+            building_dict = {
+                "rect": rect,
+                "colour": colour,
+                "destroyed": False
+            }
+            self.buildings.append(building_dict)
 
-    def takeDamage(self):
-        if self.rect.collidepoint(pygame.mouse.get_pos()):
-            print(self.destroyed)
-            if len(self.buildings) <= 0:
-                self.destroyed = True
-            else:
-                self.buildings.pop(random.randrange(len(self.buildings)))
+    def damage(self, pos):
+        if sum(b["destroyed"] for b in self.buildings) == len(self.buildings):
+            self.destroyed = True
+        else:
+            if self.rect.collidepoint(pos):
+                rand_index = random.randrange(len(self.buildings))
+                building = self.buildings[rand_index]
+                while building["destroyed"]:
+                    rand_index = random.randrange(len(self.buildings))
+                    building = self.buildings[rand_index]
 
+                if not building["destroyed"]:
+                    building["destroyed"] = True
+                    destroyed_height = int(building["rect"].height / 4)
+                    building["rect"].update(building["rect"].left, building["rect"].top + building["rect"].height - destroyed_height, building["rect"].w, destroyed_height)
 
     def draw(self):
-        if not self.destroyed:
-            pygame.draw.rect(screen, (255, 255, 255), self.rect)
-            for building in self.buildings:
-                if not building[2]:
-                    pygame.draw.rect(screen, building[1], building[0])
+        for building in self.buildings:
+            if not building["destroyed"]:
+                pygame.draw.rect(screen, building["colour"], building["rect"])
+            else:
+                pygame.draw.rect(screen, (79, 79, 79), building["rect"])
 
 
-cities = [City([0, height], width / 8), City([width / 2 - ((width / 8) / 2), height], width / 8), City([width - width / 8, height], width / 8)]
+ground = pygame.Rect(0, ground_height, width, height)
+
+cities = [City([32, ground_height], width / 8), City([width / 2 - ((width / 8) / 2) - 32, ground_height], width / 8),
+          City([width - width / 8 - 64, ground_height], width / 8)]
+silos = [Silo((width / 8 + 96, ground_height), 128),
+         Silo((width / 2 - ((width / 8) / 2) + width / 8 + 64, ground_height), 128)]
 
 
 #
@@ -131,10 +168,16 @@ def main():
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             for city in cities:
-                city.takeDamage()
+                if not city.destroyed:
+                    city.damage(pygame.mouse.get_pos())
 
         for city in cities:
             city.draw()
+
+        pygame.draw.rect(screen, (0, 255, 0), ground)
+
+        for silo in silos:
+            silo.draw()
 
         pygame.display.flip()
     # wait_for_event ()
