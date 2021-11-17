@@ -83,7 +83,9 @@ class City:
                 if not building["destroyed"]:
                     building["destroyed"] = True
                     destroyed_height = int(building["rect"].height / 4)
-                    building["rect"].update(building["rect"].left, building["rect"].top + building["rect"].height - destroyed_height, building["rect"].w, destroyed_height)
+                    old_building_rect = building["rect"]
+
+                    building["rect"] = pygame.Rect(old_building_rect.left, old_building_rect.top + old_building_rect.height - destroyed_height, old_building_rect.w, destroyed_height)
 
     def draw(self):
         for building in self.buildings:
