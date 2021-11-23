@@ -26,6 +26,58 @@ ground_height = height - 32
 attack_missiles = []
 player_missiles = []
 
+class Bresenham:
+	def __init__(self, p0, p1):
+		self.initial = True
+		self.end = False
+		self.start = p0
+		self.target = p1
+
+		self.start_x = self.start[0]
+		self.start_y = self.start[1]
+
+		self.target_x = self.target[0]
+		self.target_y = self.target[1]
+
+		self.dx = abs(self.target_x - self.start_x)
+		self.dy = abs(self.target_y - self.start_y)
+
+		if self.start_x < self.target_x:
+			self.sx = 1
+		else:
+			self.sx = -1
+
+		if self.start_y < self.target_y:
+			self.sy = 1
+		else:
+			self.sy = -1
+
+		self.err = self.dx - self.dy
+
+	def get_current_position(self):
+		return [self.start_x, self.start_y]
+
+	def get_next(self):
+		if self.initial:
+			self.initial = False
+			return [self.start_x, self.start_y]
+
+		if self.start_x == self.target_x and self.start_y == self.target_y:
+			self.end = True
+			return [self.target_x, self.target_y]
+
+		if self.err * 2 > -self.dy:
+			self.err -= self.dy
+			self.start_x -= self.sx
+		if self.err * 2 < self.dx:
+			self.err += self.dx
+			self.start_y += self.sy
+
+		self.get_current_position()
+
+	def finished(self):
+		return self.end
+
 class Explosion:
 	def __init__(self, pos, maxRadius):
 		self.pos = pos
@@ -58,6 +110,7 @@ class Missile:
 		self.y = self.pos[1]
 		self.width = 8
 		self.height = 16
+		self.path = Bresenham(self.pos, self.target)
 
 		self.missile_verticies = [(self.x, self.y), (self.x + (self.width / 2), self.y + (self.height / 2)), (self.x + self.width, self.y), (self.x + (self.width / 2), self.y + (self.height / 4))]
 
@@ -68,6 +121,9 @@ class Missile:
 		if self.pos == self.target:
 			global missiles
 			missiles.remove(this)
+
+		if not self.path.finished():
+			self.pos = self.path.get_next()
 
 		## TODO: Implement movement code
 
