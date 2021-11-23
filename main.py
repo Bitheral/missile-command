@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import pygame, sys, time, random
+import pygame, sys, time, random, math
 from pygame.locals import *
 
 ramp_one, ramp_two, ramp_three = None, None, None
@@ -19,10 +19,12 @@ screen = None
 
 maxRadius = 60
 explosions = []
-missiles = []
 delay = 100  # number of milliseconds delay before generating a USEREVENT
 
 ground_height = height - 32
+
+attack_missiles = []
+player_missiles = []
 
 class Explosion:
 	def __init__(self, pos, maxRadius):
@@ -115,7 +117,8 @@ class City:
                             self.pos[1] - building_height]
 
             rect = pygame.Rect(building_pos, (building_width, building_height))
-            colour = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+            colour_one = random.randrange(15,63)
+            colour = (colour_one, colour_one, colour_one)
 
             building_dict = {
                 "rect": rect,
@@ -214,9 +217,17 @@ def createExplosion(pos, radius):
 	global explosions
 	explosions += [Explosion(pos, radius)]
 
-def createMissile(pos, target):
-	global missiles
-	missiles += [Missile(pos, target)]
+def createPlayerMissile():
+	global player_missiles
+	smallest_distance = math.inf
+	closest_silo = None
+	for silo in silos:
+		distance = math.hypot(silo.launchPosition[0] - pygame.mouse.get_pos()[0], silo.launchPosition[1] - pygame.mouse.get_pos()[1])
+		if distance < smallest_distance:
+			smallest_distance = distance
+			closest_silo = silo
+
+	player_missiles += [Missile(closest_silo.launchPosition, pygame.mouse.get_pos())]
 
 
 def main():
@@ -225,16 +236,14 @@ def main():
     screen = pygame.display.set_mode([width, height])
 
     while True:
-        screen.fill((0, 0, 0))
+        screen.fill((128, 127, 255))
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             sys.exit(0)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             createExplosion(pygame.mouse.get_pos(), 5)
-#            createMissile(silos[random.randrange(len(silos) + 1].getLaunchPosition(), pygame.mouse.get_pos())
-            silo = silos[random.randrange(len(silos))]
-            createMissile(silo.getLaunchPosition(), pygame.mouse.get_pos())
+            createPlayerMissile()
             for city in cities:
                 if not city.destroyed:
                     city.damage(pygame.mouse.get_pos())
@@ -242,7 +251,7 @@ def main():
         for city in cities:
             city.draw()
 
-        for missile in missiles:
+        for missile in player_missiles:
             missile.draw()
             missile.update()
 
