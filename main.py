@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import pygame, sys, time, random
 from pygame.locals import *
 
@@ -16,10 +18,34 @@ width, height = 1024, 768
 screen = None
 
 maxRadius = 60
-allExplosions = []
+explosions = []
 delay = 100  # number of milliseconds delay before generating a USEREVENT
 
 ground_height = height - 32
+
+class Explosion:
+	def __init__(self, pos, maxRadius):
+		self.pos = pos
+		self.radius = random.randrange(1,10)
+		self.increasing = True
+		self.maxRadius = maxRadius
+
+	def draw(self):
+		if self.radius > 0:
+			pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius, 0)
+
+	def update(self):
+		if self.increasing:
+			self.radius += 1
+		else:
+			self.radius -= 1
+
+		if self.radius >= self.maxRadius:
+			self.increasing = False
+		elif self.radius < 0:
+			global explosions
+			explosions.remove(self)
+
 
 
 class Silo:
@@ -34,9 +60,12 @@ class Silo:
                                (self.x + self.width - (self.width / 4), self.y - self.height),
                                (self.x + (self.width / 4), self.y - self.height)]
 
+        self.silo_rect = pygame.Rect(self.x + self.height, self.y - self.height - 4, self.width - (self.height + self.height), height - self.height)
+
     def draw(self):
         # pygame.draw.rect(screen, (255, 255, 255), self.rect)
         pygame.draw.polygon(screen, (0, 255, 0), self.mound_vertices)
+        pygame.draw.rect(screen, (64, 64, 64), self.silo_rect)
 
 
 class City:
@@ -102,7 +131,6 @@ cities = [City([32, ground_height], width / 8), City([width / 2 - ((width / 8) /
 silos = [Silo((width / 8 + 96, ground_height), 128),
          Silo((width / 2 - ((width / 8) / 2) + width / 8 + 64, ground_height), 128)]
 
-
 #
 # class explosion:
 #     def __init__ (self, pos):
@@ -156,6 +184,10 @@ silos = [Silo((width / 8 + 96, ground_height), 128),
 #             updateAll ()
 #
 
+def createExplosion(pos, radius):
+	global explosions
+	explosions += [Explosion(pos, radius)]
+
 
 def main():
     global screen
@@ -169,6 +201,7 @@ def main():
             sys.exit(0)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+            createExplosion(pygame.mouse.get_pos(), 5)
             for city in cities:
                 if not city.destroyed:
                     city.damage(pygame.mouse.get_pos())
@@ -176,12 +209,17 @@ def main():
         for city in cities:
             city.draw()
 
+        for explosion in explosions:
+            explosion.draw()
+            explosion.update()
+
         pygame.draw.rect(screen, (0, 255, 0), ground)
 
         for silo in silos:
             silo.draw()
 
         pygame.display.flip()
+        pygame.time.set_timer(USEREVENT+1, 100)
     # wait_for_event ()
 
 
