@@ -19,6 +19,7 @@ screen = None
 
 maxRadius = 60
 explosions = []
+missiles = []
 delay = 100  # number of milliseconds delay before generating a USEREVENT
 
 ground_height = height - 32
@@ -47,6 +48,27 @@ class Explosion:
 			explosions.remove(self)
 
 
+class Missile:
+	def __init__(self, start, destination):
+		self.pos = start
+		self.target = destination
+		self.x = self.pos[0]
+		self.y = self.pos[1]
+		self.width = 8
+		self.height = 16
+
+		self.missile_verticies = [(self.x, self.y), (self.x + (self.width / 2), self.y + (self.height / 2)), (self.x + self.width, self.y), (self.x + (self.width / 2), self.y + (self.height / 4))]
+
+	def draw(self):
+		pygame.draw.polygon(screen, (255, 255, 255), self.missile_verticies)
+
+	def update(self):
+		if self.pos == self.target:
+			global missiles
+			missiles.remove(this)
+
+		## TODO: Implement movement code
+
 
 class Silo:
     def __init__(self, pos, w):
@@ -61,6 +83,10 @@ class Silo:
                                (self.x + (self.width / 4), self.y - self.height)]
 
         self.silo_rect = pygame.Rect(self.x + self.height, self.y - self.height - 4, self.width - (self.height + self.height), height - self.height)
+        self.launchPosition = [self.x + (self.height / 2), self.y - self.height]
+
+    def getLaunchPosition(self):
+        return self.launchPosition
 
     def draw(self):
         # pygame.draw.rect(screen, (255, 255, 255), self.rect)
@@ -188,6 +214,10 @@ def createExplosion(pos, radius):
 	global explosions
 	explosions += [Explosion(pos, radius)]
 
+def createMissile(pos, target):
+	global missiles
+	missiles += [Missile(pos, target)]
+
 
 def main():
     global screen
@@ -202,12 +232,19 @@ def main():
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             createExplosion(pygame.mouse.get_pos(), 5)
+#            createMissile(silos[random.randrange(len(silos) + 1].getLaunchPosition(), pygame.mouse.get_pos())
+            silo = silos[random.randrange(len(silos))]
+            createMissile(silo.getLaunchPosition(), pygame.mouse.get_pos())
             for city in cities:
                 if not city.destroyed:
                     city.damage(pygame.mouse.get_pos())
 
         for city in cities:
             city.draw()
+
+        for missile in missiles:
+            missile.draw()
+            missile.update()
 
         for explosion in explosions:
             explosion.draw()
