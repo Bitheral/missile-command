@@ -26,106 +26,110 @@ ground_height = height - 32
 attack_missiles = []
 player_missiles = []
 
+
 class Bresenham:
-	def __init__(self, p0, p1):
-		self.initial = True
-		self.end = False
-		self.start = p0
-		self.target = p1
+    def __init__(self, p0, p1):
+        self.initial = True
+        self.end = False
+        self.start = p0
+        self.target = p1
 
-		self.start_x = self.start[0]
-		self.start_y = self.start[1]
+        self.start_x = self.start[0]
+        self.start_y = self.start[1]
 
-		self.target_x = self.target[0]
-		self.target_y = self.target[1]
+        self.target_x = self.target[0]
+        self.target_y = self.target[1]
 
-		self.dx = abs(self.target_x - self.start_x)
-		self.dy = abs(self.target_y - self.start_y)
+        self.dx = abs(self.target_x - self.start_x)
+        self.dy = abs(self.target_y - self.start_y)
 
-		if self.start_x < self.target_x:
-			self.sx = 1
-		else:
-			self.sx = -1
+        if self.start_x < self.target_x:
+            self.sx = 1
+        else:
+            self.sx = -1
 
-		if self.start_y < self.target_y:
-			self.sy = 1
-		else:
-			self.sy = -1
+        if self.start_y < self.target_y:
+            self.sy = 1
+        else:
+            self.sy = -1
 
-		self.err = self.dx - self.dy
+        self.err = self.dx - self.dy
 
-	def get_current_position(self):
-		return [self.start_x, self.start_y]
+    def get_current_position(self):
+        return [self.start_x, self.start_y]
 
-	def get_next(self):
-		if self.initial:
-			self.initial = False
-			return [self.start_x, self.start_y]
+    def get_next(self):
+        if self.initial:
+            self.initial = False
+            return [self.start_x, self.start_y]
 
-		if self.start_x == self.target_x and self.start_y == self.target_y:
-			self.end = True
-			return [self.target_x, self.target_y]
+        if self.start_x == self.target_x and self.start_y == self.target_y:
+            self.end = True
+            return [self.target_x, self.target_y]
 
-		if self.err * 2 > -self.dy:
-			self.err -= self.dy
-			self.start_x -= self.sx
-		if self.err * 2 < self.dx:
-			self.err += self.dx
-			self.start_y += self.sy
+        if self.err * 2 > -self.dy:
+            self.err -= self.dy
+            self.start_x -= self.sx
+        if self.err * 2 < self.dx:
+            self.err += self.dx
+            self.start_y += self.sy
 
-		self.get_current_position()
+        self.get_current_position()
 
-	def finished(self):
-		return self.end
+    def finished(self):
+        return self.end
+
 
 class Explosion:
-	def __init__(self, pos, maxRadius):
-		self.pos = pos
-		self.radius = random.randrange(1,10)
-		self.increasing = True
-		self.maxRadius = maxRadius
+    def __init__(self, pos, maxRadius):
+        self.pos = pos
+        self.radius = random.randrange(1, 10)
+        self.increasing = True
+        self.maxRadius = maxRadius
 
-	def draw(self):
-		if self.radius > 0:
-			pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius, 0)
+    def draw(self):
+        if self.radius > 0:
+            pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius, 0)
 
-	def update(self):
-		if self.increasing:
-			self.radius += 1
-		else:
-			self.radius -= 1
+    def update(self):
+        if self.increasing:
+            self.radius += 1
+        else:
+            self.radius -= 1
 
-		if self.radius >= self.maxRadius:
-			self.increasing = False
-		elif self.radius < 0:
-			global explosions
-			explosions.remove(self)
+        if self.radius >= self.maxRadius:
+            self.increasing = False
+        elif self.radius < 0:
+            global explosions
+            explosions.remove(self)
 
 
 class Missile:
-	def __init__(self, start, destination):
-		self.pos = start
-		self.target = destination
-		self.x = self.pos[0]
-		self.y = self.pos[1]
-		self.width = 8
-		self.height = 16
-		self.path = Bresenham(self.pos, self.target)
+    def __init__(self, start, destination):
+        self.pos = start
+        self.target = destination
+        self.x = self.pos[0]
+        self.y = self.pos[1]
+        self.width = 8
+        self.height = 16
+        self.path = Bresenham(self.pos, self.target)
 
-		self.missile_verticies = [(self.x, self.y), (self.x + (self.width / 2), self.y + (self.height / 2)), (self.x + self.width, self.y), (self.x + (self.width / 2), self.y + (self.height / 4))]
+        self.missile_verticies = [(self.x, self.y), (self.x + (self.width / 2), self.y + (self.height / 2)),
+                                  (self.x + self.width, self.y),
+                                  (self.x + (self.width / 2), self.y + (self.height / 4))]
 
-	def draw(self):
-		pygame.draw.polygon(screen, (255, 255, 255), self.missile_verticies)
+    def draw(self):
+        pygame.draw.polygon(screen, (255, 255, 255), self.missile_verticies)
 
-	def update(self):
-		if self.pos == self.target:
-			global missiles
-			missiles.remove(this)
+    def update(self):
+        if self.pos == self.target:
+            global missiles
+            missiles.remove(this)
 
-		if not self.path.finished():
-			self.pos = self.path.get_next()
+        if not self.path.finished():
+            self.pos = self.path.get_next()
 
-		## TODO: Implement movement code
+    ## TODO: Implement movement code
 
 
 class Silo:
@@ -140,7 +144,8 @@ class Silo:
                                (self.x + self.width - (self.width / 4), self.y - self.height),
                                (self.x + (self.width / 4), self.y - self.height)]
 
-        self.silo_rect = pygame.Rect(self.x + self.height, self.y - self.height - 4, self.width - (self.height + self.height), height - self.height)
+        self.silo_rect = pygame.Rect(self.x + self.height, self.y - self.height - 4,
+                                     self.width - (self.height + self.height), height - self.height)
         self.launchPosition = [self.x + (self.height / 2), self.y - self.height]
 
     def getLaunchPosition(self):
@@ -173,7 +178,7 @@ class City:
                             self.pos[1] - building_height]
 
             rect = pygame.Rect(building_pos, (building_width, building_height))
-            colour_one = random.randrange(15,63)
+            colour_one = random.randrange(15, 63)
             colour = (colour_one, colour_one, colour_one)
 
             building_dict = {
@@ -199,7 +204,9 @@ class City:
                     destroyed_height = int(building["rect"].height / 4)
                     old_building_rect = building["rect"]
 
-                    building["rect"] = pygame.Rect(old_building_rect.left, old_building_rect.top + old_building_rect.height - destroyed_height, old_building_rect.w, destroyed_height)
+                    building["rect"] = pygame.Rect(old_building_rect.left,
+                                                   old_building_rect.top + old_building_rect.height - destroyed_height,
+                                                   old_building_rect.w, destroyed_height)
 
     def draw(self):
         for building in self.buildings:
@@ -215,6 +222,7 @@ cities = [City([32, ground_height], width / 8), City([width / 2 - ((width / 8) /
           City([width - width / 8 - 64, ground_height], width / 8)]
 silos = [Silo((width / 8 + 96, ground_height), 128),
          Silo((width / 2 - ((width / 8) / 2) + width / 8 + 64, ground_height), 128)]
+
 
 #
 # class explosion:
@@ -270,20 +278,22 @@ silos = [Silo((width / 8 + 96, ground_height), 128),
 #
 
 def createExplosion(pos, radius):
-	global explosions
-	explosions += [Explosion(pos, radius)]
+    global explosions
+    explosions += [Explosion(pos, radius)]
+
 
 def createPlayerMissile():
-	global player_missiles
-	smallest_distance = math.inf
-	closest_silo = None
-	for silo in silos:
-		distance = math.hypot(silo.launchPosition[0] - pygame.mouse.get_pos()[0], silo.launchPosition[1] - pygame.mouse.get_pos()[1])
-		if distance < smallest_distance:
-			smallest_distance = distance
-			closest_silo = silo
+    global player_missiles
+    smallest_distance = math.inf
+    closest_silo = None
+    for silo in silos:
+        distance = math.hypot(silo.launchPosition[0] - pygame.mouse.get_pos()[0],
+                              silo.launchPosition[1] - pygame.mouse.get_pos()[1])
+        if distance < smallest_distance:
+            smallest_distance = distance
+            closest_silo = silo
 
-	player_missiles += [Missile(closest_silo.launchPosition, pygame.mouse.get_pos())]
+    player_missiles += [Missile(closest_silo.launchPosition, pygame.mouse.get_pos())]
 
 
 def main():
@@ -321,7 +331,7 @@ def main():
             silo.draw()
 
         pygame.display.flip()
-        pygame.time.set_timer(USEREVENT+1, 100)
+        pygame.time.set_timer(USEREVENT + 1, 100)
     # wait_for_event ()
 
 
