@@ -26,6 +26,8 @@ ground_height = height - 32
 attack_missiles = []
 player_missiles = []
 
+last_update = 0
+
 
 class Bresenham:
     def __init__(self, p0, p1):
@@ -238,6 +240,24 @@ def createPlayerMissile():
     player_missiles += [Missile(closest_silo.launchPosition, pygame.mouse.get_pos())]
 
 
+def createAttackMissile():
+    global attack_missiles, clock, last_update
+
+    delay = 800
+    now = pygame.time.get_ticks()
+
+    start_x = random.randint(0, width)
+    start_y = ground_height - height
+    start = [start_x, start_y]
+
+    end_x = random.randint(0, width)
+    end = [end_x, ground_height]
+
+    if now - last_update >= delay and len(attack_missiles) < 8:
+        last_update = now
+        attack_missiles += [Missile(start, end)]
+
+
 def main():
     global screen, clock
     pygame.init()
@@ -246,6 +266,8 @@ def main():
 
     while True:
         screen.fill((128, 127, 255))
+
+        createAttackMissile()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -264,6 +286,10 @@ def main():
             missile.draw()
             missile.update()
 
+        for missile in attack_missiles:
+            missile.draw()
+            missile.update()
+
         for explosion in explosions:
             explosion.draw()
             explosion.update()
@@ -273,6 +299,7 @@ def main():
         for silo in silos:
             silo.draw()
 
+        last_update = pygame.time.get_ticks()
         pygame.display.flip()
         clock.tick(120)
 
