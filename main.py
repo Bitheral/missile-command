@@ -84,44 +84,56 @@ class Explosion:
         self.radius = random.randrange(1, 10)
         self.increasing = True
         self.maxRadius = max_radius
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], self.radius, self.radius)
 
     def draw(self):
         if self.radius > 0:
             pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius, 0)
 
-    def update(self):
-        if self.increasing:
-            self.radius += 1
-        else:
-            self.radius -= 1
+    def in_range(self, other):
+        return math.sqrt((self.pos[0] - other.pos[0]) ** 2 + (self.pos[1] - other.pos[1]) ** 2) <= (
+                self.radius * 2)
 
+    def update(self):
         if self.radius >= self.maxRadius:
             self.increasing = False
         elif self.radius < 0:
             global explosions
             explosions.remove(self)
 
+        if self.increasing:
+            self.radius += 1
+        else:
+            self.radius -= 1
+
 
 class Missile:
-    def __init__(self, start, destination):
+    def __init__(self, start, destination, radius=10):
         self.pos = start
         self.target = destination
         self.x = self.pos[0]
         self.y = self.pos[1]
-        self.width = 8
-        self.height = 16
+        self.radius = radius
         self.path = Bresenham(self.pos, self.target)
         self.start_position = start
+        self.rect = Rect(self.pos[0], self.pos[1], self.radius, self.radius)
+
+    def explode(self):
+        createExplosion(self.pos, 80)
+
+    def collide(self, other):
+        if not self == other:
+            return self.rect.contains(other.rect) or self.rect.colliderect(other.rect)
 
     def draw(self):
-        pygame.draw.circle(screen, (255, 255, 255), self.pos, 2)
+        pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius)
         pygame.draw.line(screen, (255, 255, 255), self.pos, self.start_position)
 
     def update(self):
         if not self.path.finished():
             self.pos = self.path.get_next()
         else:
-            createExplosion(self.pos, 80)
+            self.explode()
 
             if self in player_missiles:
                 player_missiles.remove(self)
@@ -157,15 +169,16 @@ class Silo:
 class City:
     def __init__(self, pos, city_width):
         self.pos = pos
-        self.center = [(pos[0] / 2), (pos[1] / 2)]
         self.width = city_width
         self.destroyed = False
+        self.center = [self.pos[0] + (self.width / 2), self.pos[1] - (int(self.width / 2) / 2)]
 
         building_count = 6
         building_buffer = 6
 
         self.area = [self.width + (building_buffer * building_count), (self.width / 3)]
-        self.rect = pygame.Rect((self.pos[0], self.pos[1] - self.area[1]), self.area)
+        self.rect = pygame.Rect(self.pos[0], self.pos[1] - int(self.width / 2),
+                                self.width + (building_buffer * building_count), int(self.width / 2))
         self.buildings = []
 
         for building in range(building_count):
@@ -185,25 +198,26 @@ class City:
             }
             self.buildings.append(building_dict)
 
-    def damage(self, pos):
+    def damage(self):
+        global destroyed_cities
+
         if sum(b["destroyed"] for b in self.buildings) == len(self.buildings):
             self.destroyed = True
         else:
-            if self.rect.collidepoint(pos):
+            rand_index = random.randrange(len(self.buildings))
+            building = self.buildings[rand_index]
+            while building["destroyed"]:
                 rand_index = random.randrange(len(self.buildings))
                 building = self.buildings[rand_index]
-                while building["destroyed"]:
-                    rand_index = random.randrange(len(self.buildings))
-                    building = self.buildings[rand_index]
 
-                if not building["destroyed"]:
-                    building["destroyed"] = True
-                    destroyed_height = int(building["rect"].height / 4)
-                    old_building_rect = building["rect"]
+            if not building["destroyed"]:
+                building["destroyed"] = True
+                destroyed_height = int(building["rect"].height / 4)
+                old_building_rect = building["rect"]
 
-                    building["rect"] = pygame.Rect(old_building_rect.left,
-                                                   old_building_rect.top + old_building_rect.height - destroyed_height,
-                                                   old_building_rect.w, destroyed_height)
+                building["rect"] = pygame.Rect(old_building_rect.left,
+                                               old_building_rect.top + old_building_rect.height - destroyed_height,
+                                               old_building_rect.w, destroyed_height)
 
     def draw(self):
         for building in self.buildings:
@@ -241,16 +255,30 @@ def createPlayerMissile():
 
 
 def createAttackMissile():
-    global attack_missiles, clock, last_update
+    global cities, attack_missiles, clock, last_update
 
-    delay = 800
+    delay = 1000
     now = pygame.time.get_ticks()
 
     start_x = random.randint(0, width)
     start_y = ground_height - height
     start = [start_x, start_y]
 
-    end_x = random.randint(0, width)
+    smallest_distance = math.inf
+    closest_city = None
+    end_x = 0
+    for city in cities:
+        distance = math.hypot(city.center[0] - start_x,
+                              city.center[1] - start_y)
+        if distance < smallest_distance and not city.destroyed:
+            smallest_distance = distance
+            closest_city = city
+
+    if closest_city is None:
+        end_x = random.randint(0, width)
+    else:
+        end_x = closest_city.center[0]
+
     end = [end_x, ground_height]
 
     if now - last_update >= delay and len(attack_missiles) < 8:
@@ -274,10 +302,8 @@ def main():
                 sys.exit(0)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                createPlayerMissile()
-                for city in cities:
-                    if not city.destroyed:
-                        city.damage(pygame.mouse.get_pos())
+                if event.button == pygame.BUTTON_LEFT:
+                    createPlayerMissile()
 
         for city in cities:
             city.draw()
@@ -285,6 +311,12 @@ def main():
         for missile in player_missiles:
             missile.draw()
             missile.update()
+            for attack in attack_missiles:
+                if missile.collide(attack):
+                    missile.explode()
+                    attack.explode()
+                    player_missiles.remove(missile)
+                    attack_missiles.remove(attack)
 
         for missile in attack_missiles:
             missile.draw()
@@ -293,6 +325,16 @@ def main():
         for explosion in explosions:
             explosion.draw()
             explosion.update()
+            for city in cities:
+                # if city.rect.colliderect(explosion.rect):
+                #     city.damage()
+                if explosion.in_range(city):
+                    city.damage()
+
+            for attack in attack_missiles:
+                if explosion.in_range(attack):
+                    attack.explode()
+                    attack_missiles.remove(attack)
 
         pygame.draw.rect(screen, (0, 255, 0), ground)
 
