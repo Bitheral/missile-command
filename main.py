@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+# Imports
 import math
 import pygame
 import random
@@ -8,31 +9,42 @@ from pygame.locals import *
 
 ramp_one, ramp_two, ramp_three = None, None, None
 
-wood_light = (166, 124, 54)
-wood_dark = (76, 47, 0)
-blue = (0, 100, 255)
-dark_red = (166, 25, 50)
-dark_green = (25, 100, 50)
-dark_blue = (25, 50, 150)
 black = (0, 0, 0)
 white = (255, 255, 255)
 
-width, height = 1024, 768
+## Window
+# Width of the window defined to be 1280
+# Height of the window defined to be 720
+width, height = 1280, 720
+
+## Window
 screen = pygame.Surface((width, height))
+
+## Pygame clock - This helps keep track of time in the program
 clock = None
 
 maxRadius = 60
 explosions = []
 
+
+## Amount of pixels above the height of the window
 ground_height = height - 32
 
+
+# Pygame event integers
+LEFT_MOUSE_BUTTON = 1
+RIGHT_MOUSE_BUTTON = 3
+
+# Defines missiles array for attack missiles and player missiles
 attack_missiles = []
 player_missiles = []
 
+# Keeps track of what tick was last updated at
 last_update = 0
 last_spawn = 0
 
 
+# Calculates a set of points along a line
 class Bresenham:
     def __init__(self, p0, p1):
         self.initial = True
@@ -97,7 +109,7 @@ class Explosion:
     def draw(self):
         global screen
         if self.radius > 0:
-            pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius, 0)
+            pygame.draw.circle(screen, (255, 255, 255), (int(self.pos[0]), int(self.pos[1])), int(self.radius), 0)
         else:
             del self
 
@@ -148,8 +160,8 @@ class Missile:
 
     def draw(self):
         global screen
-        pygame.draw.circle(screen, (255, 255, 255), self.pos, self.radius)
-        pygame.draw.line(screen, (255, 255, 255), self.pos, self.start_position)
+        pygame.draw.circle(screen, (255, 255, 255), (int(self.pos[0]), int(self.pos[1])), self.radius)
+        pygame.draw.line(screen, (255, 255, 255), (int(self.pos[0]), int(self.pos[1])), self.start_position)
 
     def update(self):
         if not self.path.finished():
@@ -193,15 +205,15 @@ class Silo:
             self.missiles += 1
 
     def draw(self):
-        # pygame.draw.rect(screen, (255, 255, 255), self.rect)
+        # pygame.draw.rect(screen, (255, 0, 0), self.rect)
         pygame.draw.polygon(screen, (0, 255, 0), self.mound_vertices)
         pygame.draw.rect(screen, (64, 64, 64), self.silo_rect)
 
         ammo_radius = 4
 
         for ammo in range(self.missiles):
-            ammo_pos = (self.x + (self.height + ((ammo_radius * 2) + ammo_radius / 2) * ammo) + ammo_radius * 1.5, self.y + self.height / 2)
-            pygame.draw.circle(screen, (255, 255, 255),ammo_pos , ammo_radius, 0)
+            ammo_pos = (int(self.x + (self.height + ((ammo_radius * 2) + ammo_radius / 2) * ammo) + ammo_radius * 1.5), int(self.y + self.height / 2))
+            pygame.draw.circle(screen, (255, 255, 255), ammo_pos, int(ammo_radius), 0)
 
 
 class City:
@@ -346,7 +358,7 @@ def main():
                 sys.exit(0)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == pygame.BUTTON_LEFT:
+                if event.button == LEFT_MOUSE_BUTTON:
                     createPlayerMissile()
 
         for city in cities:
@@ -385,7 +397,7 @@ def main():
             silo.update()
 
         pygame.display.flip()
-        clock.tick(120)
+        clock.tick(60)
         last_update = pygame.time.get_ticks()
 
 
