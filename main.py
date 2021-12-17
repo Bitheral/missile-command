@@ -42,6 +42,7 @@ last_spawn = 0
     Thanks to Processing/P5.js for providing the code for these two functions
     The bind function allows a value between a set of two values, to be set to another set
     For example: 0-1920 to 0-1
+    https://github.com/processing/p5.js
     
     Bind function (Known as map in p5.js, renamed due to naming conviction in Python):
     https://github.com/processing/p5.js/blob/v1.4.0/src/math/calculation.js#L409
